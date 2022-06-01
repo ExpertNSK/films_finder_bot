@@ -1,1 +1,1 @@
-web: python filmsfinderbot.py
+worker: python filmsfinderbot.py
