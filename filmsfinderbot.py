@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 
 
 load_dotenv()
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-API_KINOPOISK = os.getenv('API_TOKEN')
-ENDPOINT_FILMS = os.getenv('ENDPOINT_FILMS')
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
+API_KINOPOISK = os.environ.get('API_TOKEN')
+ENDPOINT_FILMS = os.environ.get('ENDPOINT_FILMS')
 URL_PARAMS = {'token': API_KINOPOISK}
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
@@ -24,6 +24,11 @@ def check_tokens():
         or ENDPOINT_FILMS is None
     ):
         return False
+    print(
+        TELEGRAM_TOKEN,
+        API_KINOPOISK,
+        ENDPOINT_FILMS
+    )
     return True
 
 
