@@ -24,11 +24,6 @@ def check_tokens():
         or ENDPOINT_FILMS is None
     ):
         return False
-    print(
-        TELEGRAM_TOKEN,
-        API_KINOPOISK,
-        ENDPOINT_FILMS
-    )
     return True
 
 
