@@ -43,7 +43,7 @@ def start_up(data):
 def buil_genre_endpoint(data):
     print(f'Запрашиваемый жанр: {data.text}')
     genre = data.text.strip().lower()
-    film_list = f'limit=100&field=rating.kp&search=1-10&search={genre}&field=genres.name'
+    film_list = f'limit=100&field=rating.kp&search=1-10&field=rating.kp&search=1-10&search={genre}&field=genres.name'
     middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
     pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
     rdm_page = randint(1, pages)
