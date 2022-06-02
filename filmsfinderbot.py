@@ -3,7 +3,7 @@ import sys
 import requests
 import telebot
 
-from telebot import types
+from keyboards import *
 from random import randint, choice
 from dotenv import load_dotenv
 
@@ -32,22 +32,28 @@ def start_up(data):
     """Стартовое приветствие пользователя.
     Создание и сохранение пользователя."""
     name = data.chat.first_name
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton('Найти случайный фильм')
-    item2 = types.KeyboardButton('Фильтр: рейтинг КиноПоиска')
-    item3 = types.KeyboardButton('Фильтр: рейтинг IMDB')
-    markup.add(item1)
-    markup.add(item2)
-    markup.add(item3)
     bot.send_message(
         data.chat.id,
         f'Здравствуйте, {name}!\nЯ - Films Finder Bot\nБот для поиска фильмов к просмотру на вечер!\n'
          'На данный момент я могу найти и предложить к просмотру любой случайный фильм,\n'
-         'так же можно задать фильтрацию фильмов по рейтингу на Кинопоиске, либо IMDB =)', reply_markup=markup
+         'так же можно задать фильтрацию фильмов по рейтингу на Кинопоиске, либо IMDB =)', reply_markup=main_keyboard
     )
 
 
-def build_endpoint(data, source):
+def buil_genre_endpoint(data):
+    print(f'Запрашиваемый жанр: {data.text}')
+    genre = data.text.strip().lower()
+    film_list = f'limit=100&field=rating.kp&search=1-10&search={genre}&field=genres.name'
+    middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
+    pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
+    rdm_page = randint(1, pages)
+    final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
+    response = requests.get(final_endpoint, params=URL_PARAMS).json()
+    while response.get('description') is None:
+        response = choice(response.get('docs'))
+    send_message(response, data.chat.id)
+
+def build_rtg_endpoint(data, source):
     rtg = data.text.split(' ')
     min_rtg = int(rtg[0])
     max_rtg = int(rtg[1])
@@ -66,7 +72,7 @@ def build_endpoint(data, source):
 
 def get_rdm_rating_imdb(data):
     chat_id = data.chat.id
-    final_endpoint = build_endpoint(data, source='imdb')
+    final_endpoint = build_rtg_endpoint(data, source='imdb')
     response = requests.get(final_endpoint, params=URL_PARAMS).json()
     while response.get('description') is None:
         response = choice(response.get('docs'))
@@ -75,7 +81,7 @@ def get_rdm_rating_imdb(data):
 
 def get_rdm_rating_kp(data):
     chat_id = data.chat.id
-    final_endpoint = build_endpoint(data, source='kp')
+    final_endpoint = build_rtg_endpoint(data, source='kp')
     response = requests.get(final_endpoint, params=URL_PARAMS).json()
     while response.get('description') is None:
         response = choice(response.get('docs'))
@@ -107,7 +113,7 @@ def send_message(film, chat_id):
         f'Описание: {msg_description}'
     )
     bot.send_photo(chat_id, poster_url)
-    bot.send_message(chat_id, text)
+    bot.send_message(chat_id, text, reply_markup=main_keyboard)
     print(f'Фильм успешно получен: {msg_name}')
 
 
@@ -125,6 +131,10 @@ def send_random_film(data):
         msg = bot.send_message(chat_id, 'Введите диапазон искомого рейтинга через пробел\nНапример: 5 9')
         print('Запрос по рейтингу IMDB')
         bot.register_next_step_handler(msg, get_rdm_rating_imdb)
+    elif data.text.strip().lower() == 'фильтр: жанр':
+        msg = bot.send_message(chat_id, 'Выберите жанр', reply_markup=keyboard_genres)
+        bot.register_next_step_handler(msg, buil_genre_endpoint)
+        print('Запрос по жанру')
 
 
 def main():
