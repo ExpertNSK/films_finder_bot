@@ -42,10 +42,11 @@ def start_up(data):
 
 # получение случайного фильма с фильтром по жанру
 def get_film_filter_genre(data):
-    print(f'Запрашиваемый жанр: {data.text}')
     try:
+        bot.send_chat_action(data.chat.id, action='typing')
         genre = data.text.strip().lower()
-        film_list = f'limit=100&field=rating.imdb&search=1-10&field=rating.kp&search=1-10&search={genre}&field=genres.name&search=1&field=typeNumber'
+        print(f'Запрашиваемый жанр: {genre}')
+        film_list = f'limit=100&field=rating.imdb&search=1-10&field=rating.kp&search=6-10&search={genre}&field=genres.name&search=1&field=typeNumber&field=year&search=2000-2022'
         middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
         pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
         rdm_page = randint(1, pages)
@@ -62,6 +63,7 @@ def get_film_filter_genre(data):
 def get_film_filter_rating_kp_or_imdb(data, source):
     chat_id = data.chat.id
     try:
+        bot.send_chat_action(chat_id, action='typing')
         rtg = data.text.split(' ')
         min_rtg = int(rtg[0])
         max_rtg = int(rtg[1])
@@ -123,6 +125,7 @@ def send_message(film, chat_id):
 def send_random_film(data):
     chat_id = data.chat.id
     if data.text.strip().lower() == 'найти случайный фильм':
+        bot.send_chat_action(chat_id, action='typing')
         print('Запрос случайного фильма')
         get_random_film(chat_id)
     elif data.text.strip().lower() == 'фильтры':
