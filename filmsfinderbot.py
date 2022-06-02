@@ -47,33 +47,38 @@ def start_up(data):
     )
 
 
-def get_rdm_rating_imdb(data):
+def build_endpoint(data, source):
     rtg = data.text.split(' ')
-    chat_id = data.chat.id
     min_rtg = int(rtg[0])
     max_rtg = int(rtg[1])
-    film_list = f'limit=100&field=rating.imdb&search={min_rtg}-{max_rtg}&field=rating.kp&search=1-10'
+    print(f'Запрашиваемый рейтинг: от {min_rtg} до {max_rtg}')
+    if source == 'kp':
+        film_list = f'limit=100&field=rating.kp&search={min_rtg}-{max_rtg}&field=rating.imdb&search=1-10'
+    elif source == 'imdb':
+        film_list = f'limit=100&field=rating.imdb&search={min_rtg}-{max_rtg}&field=rating.kp&search=1-10'
     middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
     pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
     rdm_page = randint(1, pages)
     final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
+    print(f'Получен endpoint: {final_endpoint}')
+    return final_endpoint
+
+
+def get_rdm_rating_imdb(data):
+    chat_id = data.chat.id
+    final_endpoint = build_endpoint(data, source='imdb')
     response = requests.get(final_endpoint, params=URL_PARAMS).json()
-    response = choice(response.get('docs'))
+    while response.get('description') is None:
+        response = choice(response.get('docs'))
     send_message(response, chat_id)
 
 
 def get_rdm_rating_kp(data):
-    rtg = data.text.split(' ')
     chat_id = data.chat.id
-    min_rtg = int(rtg[0])
-    max_rtg = int(rtg[1])
-    film_list = f'limit=100&field=rating.kp&search={min_rtg}-{max_rtg}'
-    middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
-    pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
-    rdm_page = randint(1, pages)
-    final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
+    final_endpoint = build_endpoint(data, source='kp')
     response = requests.get(final_endpoint, params=URL_PARAMS).json()
-    response = choice(response.get('docs'))
+    while response.get('description') is None:
+        response = choice(response.get('docs'))
     send_message(response, chat_id)
 
 
@@ -82,7 +87,8 @@ def get_random_film(id):
     film_list = 'limit=100&field=rating.kp&search=5-10'
     final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
     response = requests.get(final_endpoint, params=URL_PARAMS).json()
-    response = choice(response.get('docs'))
+    while response.get('description') is None:
+        response = choice(response.get('docs'))
     send_message(response, id)
 
 
@@ -102,18 +108,22 @@ def send_message(film, chat_id):
     )
     bot.send_photo(chat_id, poster_url)
     bot.send_message(chat_id, text)
+    print(f'Фильм успешно получен: {msg_name}')
 
 
 @bot.message_handler(content_types=['text'])
 def send_random_film(data):
     chat_id = data.chat.id
     if data.text.strip().lower() == 'найти случайный фильм':
+        print('Запрос случайного фильма')
         get_random_film(chat_id)
     elif data.text.strip().lower() == 'фильтр: рейтинг кинопоиска':
         msg = bot.send_message(chat_id, 'Введите диапазон искомого рейтинга через пробел\nНапример: 5 9')
+        print('Запрос по рейтингу КП')
         bot.register_next_step_handler(msg, get_rdm_rating_kp)
     elif data.text.strip().lower() == 'фильтр: рейтинг imdb':
         msg = bot.send_message(chat_id, 'Введите диапазон искомого рейтинга через пробел\nНапример: 5 9')
+        print('Запрос по рейтингу IMDB')
         bot.register_next_step_handler(msg, get_rdm_rating_imdb)
 
 
@@ -121,6 +131,7 @@ def main():
     if not check_tokens():
         print('Отсутствуют переменная (-ные) окружения!')
         return 0
+    print('Бот успешно запущен!')
     bot.enable_save_next_step_handlers(delay=2, filename='./handlers-save/step.save')
     bot.load_next_step_handlers()
     bot.polling(none_stop=True, interval=0)
