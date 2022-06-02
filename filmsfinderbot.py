@@ -79,7 +79,12 @@ def get_film_filter_rating_kp_or_imdb(data, source):
             response = choice(response.get('docs'))
         send_message(response, chat_id)
     except:
-        bot.send_message(data.chat.id, 'Неверно введено значение, необходимо ввести минимальный и максимальный рейтинг одним сообщением через пробел.')
+        bot.send_message(
+            data.chat.id,
+            ('Неверно введено значение! Необходимо ввести сначала минимальный, затем максимальный рейтинг одним сообщением через пробел.\n'
+             'Попробуйте еще раз.'),
+            reply_markup=main_keyboard
+        )
 
 
 # получение случайного фильма
@@ -120,17 +125,19 @@ def send_random_film(data):
     if data.text.strip().lower() == 'найти случайный фильм':
         print('Запрос случайного фильма')
         get_random_film(chat_id)
-    elif data.text.strip().lower() == 'фильтр: рейтинг кинопоиска':
+    elif data.text.strip().lower() == 'фильтры':
+        bot.send_message(chat_id, 'Выберите фильтр', reply_markup=keyboard_filters)
+    elif data.text.strip().lower() == 'рейтинг кинопоиска':
         msg = bot.send_message(chat_id, 'Введите диапазон искомого рейтинга через пробел\nНапример: 5 9')
         print('Запрос по рейтингу КП')
         source = 'kp'
         bot.register_next_step_handler(msg, get_film_filter_rating_kp_or_imdb, source)
-    elif data.text.strip().lower() == 'фильтр: рейтинг imdb':
+    elif data.text.strip().lower() == 'рейтинг imdb':
         source = 'imdb'
         msg = bot.send_message(chat_id, 'Введите диапазон искомого рейтинга через пробел\nНапример: 5 9')
         print('Запрос по рейтингу IMDB')
         bot.register_next_step_handler(msg, get_film_filter_rating_kp_or_imdb, source)
-    elif data.text.strip().lower() == 'фильтр: жанр':
+    elif data.text.strip().lower() == 'жанр':
         msg = bot.send_message(chat_id, 'Выберите жанр', reply_markup=keyboard_genres)
         bot.register_next_step_handler(msg, get_film_filter_genre)
         print('Запрос по жанру')
