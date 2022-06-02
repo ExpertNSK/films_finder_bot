@@ -40,54 +40,49 @@ def start_up(data):
     )
 
 
-def buil_genre_endpoint(data):
+# получение случайного фильма с фильтром по жанру
+def get_film_filter_genre(data):
     print(f'Запрашиваемый жанр: {data.text}')
-    genre = data.text.strip().lower()
-    film_list = f'limit=100&field=rating.imdb&search=1-10&field=rating.kp&search=1-10&search={genre}&field=genres.name'
-    middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
-    pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
-    rdm_page = randint(1, pages)
-    final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
-    response = requests.get(final_endpoint, params=URL_PARAMS).json()
-    while response.get('description') is None:
-        response = choice(response.get('docs'))
-    send_message(response, data.chat.id)
-
-def build_rtg_endpoint(data, source):
-    rtg = data.text.split(' ')
-    min_rtg = int(rtg[0])
-    max_rtg = int(rtg[1])
-    print(f'Запрашиваемый рейтинг: от {min_rtg} до {max_rtg}')
-    if source == 'kp':
-        film_list = f'limit=100&field=rating.kp&search={min_rtg}-{max_rtg}&field=rating.imdb&search=1-10'
-    elif source == 'imdb':
-        film_list = f'limit=100&field=rating.imdb&search={min_rtg}-{max_rtg}&field=rating.kp&search=1-10'
-    middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
-    pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
-    rdm_page = randint(1, pages)
-    final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
-    print(f'Получен endpoint: {final_endpoint}')
-    return final_endpoint
+    try:
+        genre = data.text.strip().lower()
+        film_list = f'limit=100&field=rating.imdb&search=1-10&field=rating.kp&search=1-10&search={genre}&field=genres.name&search=1&field=typeNumber'
+        middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
+        pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
+        rdm_page = randint(1, pages)
+        final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
+        response = requests.get(final_endpoint, params=URL_PARAMS).json()
+        while response.get('description') is None:
+            response = choice(response.get('docs'))
+        send_message(response, data.chat.id)
+    except:
+        bot.send_message(chat_id=data.chat.id, text='Что-то пошло не так. Удостоверьтесь, что жанр написан верно.', reply_markup=main_keyboard)
 
 
-def get_rdm_rating_imdb(data):
+# получение случайного фильма с фильтром по рейтингу кинопоиска или IMDB
+def get_film_filter_rating_kp_or_imdb(data, source):
     chat_id = data.chat.id
-    final_endpoint = build_rtg_endpoint(data, source='imdb')
-    response = requests.get(final_endpoint, params=URL_PARAMS).json()
-    while response.get('description') is None:
+    try:
+        rtg = data.text.split(' ')
+        min_rtg = int(rtg[0])
+        max_rtg = int(rtg[1])
+        if source == 'kp':
+            film_list = f'limit=100&field=rating.kp&search={min_rtg}-{max_rtg}&field=rating.imdb&search=1-10&search=1&field=typeNumber'
+        elif source == 'imdb':
+            film_list = f'limit=100&field=rating.imdb&search={min_rtg}-{max_rtg}&field=rating.kp&search=1-10&search=1&field=typeNumber'
+        middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
+        pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
+        rdm_page = randint(1, pages)
+        final_endpoint = ENDPOINT_FILMS + f'?page={rdm_page}&' + film_list
+        response = requests.get(final_endpoint, params=URL_PARAMS).json()
         response = choice(response.get('docs'))
-    send_message(response, chat_id)
+        while response.get('description') is None:
+            response = choice(response.get('docs'))
+        send_message(response, chat_id)
+    except:
+        bot.send_message(data.chat.id, 'Неверно введено значение, необходимо ввести минимальный и максимальный рейтинг одним сообщением через пробел.')
 
 
-def get_rdm_rating_kp(data):
-    chat_id = data.chat.id
-    final_endpoint = build_rtg_endpoint(data, source='kp')
-    response = requests.get(final_endpoint, params=URL_PARAMS).json()
-    while response.get('description') is None:
-        response = choice(response.get('docs'))
-    send_message(response, chat_id)
-
-
+# получение случайного фильма
 def get_random_film(id):
     rdm_page = randint(1, 682)
     film_list = 'limit=100&field=rating.kp&search=5-10'
@@ -98,6 +93,7 @@ def get_random_film(id):
     send_message(response, id)
 
 
+# отправка сообщения пользователю
 def send_message(film, chat_id):
     msg_name = film.get('name')
     poster_url = film.get('poster').get('url')
@@ -117,6 +113,7 @@ def send_message(film, chat_id):
     print(f'Фильм успешно получен: {msg_name}')
 
 
+# ожидание команды и вызов дальнейших инструкций
 @bot.message_handler(content_types=['text'])
 def send_random_film(data):
     chat_id = data.chat.id
@@ -126,15 +123,19 @@ def send_random_film(data):
     elif data.text.strip().lower() == 'фильтр: рейтинг кинопоиска':
         msg = bot.send_message(chat_id, 'Введите диапазон искомого рейтинга через пробел\nНапример: 5 9')
         print('Запрос по рейтингу КП')
-        bot.register_next_step_handler(msg, get_rdm_rating_kp)
+        source = 'kp'
+        bot.register_next_step_handler(msg, get_film_filter_rating_kp_or_imdb, source)
     elif data.text.strip().lower() == 'фильтр: рейтинг imdb':
+        source = 'imdb'
         msg = bot.send_message(chat_id, 'Введите диапазон искомого рейтинга через пробел\nНапример: 5 9')
         print('Запрос по рейтингу IMDB')
-        bot.register_next_step_handler(msg, get_rdm_rating_imdb)
+        bot.register_next_step_handler(msg, get_film_filter_rating_kp_or_imdb, source)
     elif data.text.strip().lower() == 'фильтр: жанр':
         msg = bot.send_message(chat_id, 'Выберите жанр', reply_markup=keyboard_genres)
-        bot.register_next_step_handler(msg, buil_genre_endpoint)
+        bot.register_next_step_handler(msg, get_film_filter_genre)
         print('Запрос по жанру')
+    else:
+        bot.send_message(chat_id, 'Неизвестная команда =(')
 
 
 def main():
