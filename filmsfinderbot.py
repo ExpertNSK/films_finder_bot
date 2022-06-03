@@ -81,12 +81,12 @@ def get_film_filter_rating_kp_or_imdb(data, source):
             response = choice(response.get('docs'))
         send_message(response, chat_id)
     except:
-        bot.send_message(
+        msg = bot.send_message(
             data.chat.id,
             ('Неверно введено значение! Необходимо ввести сначала минимальный, затем максимальный рейтинг одним сообщением через пробел.\n'
              'Попробуйте еще раз.'),
-            reply_markup=main_keyboard
         )
+        bot.register_next_step_handler(msg, get_film_filter_rating_kp_or_imdb, source)
 
 
 # получение случайного фильма
