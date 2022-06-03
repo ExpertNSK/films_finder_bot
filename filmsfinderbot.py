@@ -91,8 +91,8 @@ def get_film_filter_rating_kp_or_imdb(data, source):
 
 # получение случайного фильма
 def get_random_film(id):
-    rdm_page = randint(1, 682)
-    film_list = 'limit=100&field=rating.kp&search=5-10'
+    rdm_page = randint(1, 403)
+    film_list = 'limit=100&field=rating.kp&search=5-10&field=year&search=2000-2022'
     final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
     response = requests.get(final_endpoint, params=URL_PARAMS).json()
     while response.get('description') is None:
