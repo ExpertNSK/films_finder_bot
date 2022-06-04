@@ -42,6 +42,7 @@ def start_up(data):
 
 # получение случайного фильма с фильтром по жанру
 def get_film_filter_genre(data):
+    """Получение фильма с фильтром по жанру."""
     try:
         bot.send_chat_action(data.chat.id, action='typing')
         genre = data.text.strip().lower()
@@ -56,11 +57,12 @@ def get_film_filter_genre(data):
             response = choice(response.get('docs'))
         send_message(response, data.chat.id)
     except:
-        bot.send_message(chat_id=data.chat.id, text='Что-то пошло не так. Удостоверьтесь, что жанр написан верно.', reply_markup=main_keyboard)
+        bot.send_message(chat_id=data.chat.id, text='Что-то пошло не так.', reply_markup=main_keyboard)
 
 
 # получение случайного фильма с фильтром по рейтингу кинопоиска или IMDB
 def get_film_filter_rating_kp_or_imdb(data, source):
+    """Получение фильма с фильтром по рейтингу."""
     chat_id = data.chat.id
     try:
         bot.send_chat_action(chat_id, action='typing')
@@ -91,6 +93,7 @@ def get_film_filter_rating_kp_or_imdb(data, source):
 
 # получение случайного фильма
 def get_random_film(id):
+    """Получение случайного фильма."""
     rdm_page = randint(1, 403)
     film_list = 'limit=100&field=rating.kp&search=5-10&field=year&search=2000-2022'
     final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
@@ -102,6 +105,7 @@ def get_random_film(id):
 
 # отправка сообщения пользователю
 def send_message(film, chat_id):
+    """Отправка результата."""
     msg_name = film.get('name')
     poster_url = film.get('poster').get('url')
     msg_description = film.get('shortDescription')
@@ -122,7 +126,8 @@ def send_message(film, chat_id):
 
 # ожидание команды и вызов дальнейших инструкций
 @bot.message_handler(content_types=['text'])
-def send_random_film(data):
+def commands_hub(data):
+    """Ждем команду."""
     chat_id = data.chat.id
     if data.text.strip().lower() == 'найти случайный фильм':
         bot.send_chat_action(chat_id, action='typing')
@@ -149,6 +154,7 @@ def send_random_film(data):
 
 
 def main():
+    """Запуск программы."""
     if not check_tokens():
         print('Отсутствуют переменная (-ные) окружения!')
         return 0
