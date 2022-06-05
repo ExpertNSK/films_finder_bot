@@ -3,7 +3,6 @@ import sys
 import requests
 import telebot
 
-from pprint import pprint
 from keyboards import *
 from random import randint, choice
 from dotenv import load_dotenv
@@ -48,18 +47,18 @@ def get_film_filter_genre(data):
         bot.send_chat_action(data.chat.id, action='typing')
         genre = data.text.strip().lower()
         print(f'Запрашиваемый жанр: {genre}')
-        film_list = f'field=rating.imdb&search=6-10&field=rating.kp&search=7-10&search={genre}&field=genres.name'
-        middle_endpoint = ENDPOINT_FILMS + f'&{film_list}'
+        film_list = f'limit=100&field=rating.imdb&search=1-10&field=rating.kp&search=6-10&search={genre}&field=genres.name&search=1&field=typeNumber&field=year&search=2000-2022'
+        middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
         pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
         rdm_page = randint(1, pages)
-        final_endpoint = ENDPOINT_FILMS + f'&page={rdm_page}&' + film_list
+        final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
         response = requests.get(final_endpoint, params=URL_PARAMS).json()
         while response.get('description') is None:
             response = choice(response.get('docs'))
         send_message(response, data.chat.id)
     except:
         bot.send_message(chat_id=data.chat.id, text='Что-то пошло не так.', reply_markup=main_keyboard)
-    
+
 
 # получение случайного фильма с фильтром по рейтингу кинопоиска или IMDB
 def get_film_filter_rating_kp_or_imdb(data, source):
@@ -71,13 +70,13 @@ def get_film_filter_rating_kp_or_imdb(data, source):
         min_rtg = int(rtg[0])
         max_rtg = int(rtg[1])
         if source == 'kp':
-            film_list = f'field=rating.kp&search={min_rtg}-{max_rtg}&field=rating.imdb&search=1-10'
+            film_list = f'limit=100&field=rating.kp&search={min_rtg}-{max_rtg}&field=rating.imdb&search=1-10&search=1&field=typeNumber'
         elif source == 'imdb':
-            film_list = f'field=rating.imdb&search={min_rtg}-{max_rtg}&field=rating.kp&search=1-10'
-        middle_endpoint = ENDPOINT_FILMS + f'&{film_list}'
+            film_list = f'limit=100&field=rating.imdb&search={min_rtg}-{max_rtg}&field=rating.kp&search=1-10&search=1&field=typeNumber'
+        middle_endpoint = ENDPOINT_FILMS + f'?{film_list}'
         pages = requests.get(middle_endpoint, params=URL_PARAMS).json().get('pages')
         rdm_page = randint(1, pages)
-        final_endpoint = ENDPOINT_FILMS + f'&page={rdm_page}&' + film_list
+        final_endpoint = ENDPOINT_FILMS + f'?page={rdm_page}&' + film_list
         response = requests.get(final_endpoint, params=URL_PARAMS).json()
         response = choice(response.get('docs'))
         while response.get('description') is None:
@@ -95,9 +94,9 @@ def get_film_filter_rating_kp_or_imdb(data, source):
 # получение случайного фильма
 def get_random_film(id):
     """Получение случайного фильма."""
-    rdm_page = randint(1, 152)
-    film_list = 'field=rating.kp&search=5-10'
-    final_endpoint = ENDPOINT_FILMS + f'&page={rdm_page}&' + film_list
+    rdm_page = randint(1, 403)
+    film_list = 'limit=100&field=rating.kp&search=5-10&field=year&search=2000-2022'
+    final_endpoint = ENDPOINT_FILMS + f'?{rdm_page}&' + film_list
     response = requests.get(final_endpoint, params=URL_PARAMS).json()
     while response.get('description') is None:
         response = choice(response.get('docs'))
